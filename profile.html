@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Social Media App</title>
+    <link rel="stylesheet" href="/css/profile.css">
+	<!-- FontAwesome for icons -->
+	    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="logo">SocialMediaApp</div>
+        <div class="nav-links">
+            <a th:href="@{/home}">Home</a>
+            <a th:href="@{/profile}" class="active">Profile</a>
+            <a th:href="@{/messages}">Messages</a>
+            <a th:href="@{/notifications}">Notifications</a>
+            <a th:href="@{/logout}">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Cover Photo Upload Form -->
+        <form th:action="@{/uploadCoverPhoto}" method="post" enctype="multipart/form-data">
+            <div class="cover-photo-container">
+                <img th:src="@{${user.coverPhotoUrl} ?: '/images/default-cover.jpg'}" alt="Cover Photo" class="cover-photo">
+                <label for="cover-photo-upload" class="edit-cover-icon">&#9998;</label>
+                <input type="file" id="cover-photo-upload" name="coverPhoto" accept="image/*" style="display: none;" onchange="this.form.submit();">
+            </div>
+        </form>
+
+        <!-- Profile Header -->
+        <section class="profile-header">
+            <div class="profile-photo-container">
+                <img th:src="@{${user.profilePictureUrl != null} ? ${user.profilePictureUrl} : '/images/default-profile.jpg'}"
+                     alt="Profile Picture" class="profile-photo">
+            </div>
+            <div class="profile-details">
+				<!-- Display username, followers, and following count -->
+				<h1>
+				            <span th:text="${user.username}"></span>
+				            <!-- Display Followers and Following counts as links -->
+				            <span class="followers-following">( 
+				                <a th:href="@{/user/{username}/followers(username=${user.username})}" 
+				                   th:text="${user.followers.size()}">0</a> Followers, 
+				                <a th:href="@{/user/{username}/following(username=${user.username})}" 
+				                   th:text="${user.following.size()}">0</a> Following
+				            )</span>
+				        </h1>
+				               <!-- Follow/Unfollow Button (hide when logged-in user is viewing their own profile) -->
+				               <div th:if="${loggedInUser.username != user.username}">
+				                   <form th:action="@{${user.followers.contains(loggedInUser.id) ? '/user/unfollow/' : '/user/follow/'} + ${user.username}}" method="post">
+				                       <button type="submit" class="follow-btn" th:text="${user.followers.contains(loggedInUser.id) ? 'Unfollow' : 'Follow'}"></button>
+				                   </form>
+								   <!-- Message button -->
+								   					<form th:if="${loggedInUser.id != profileUser.id}" 
+								   					      th:action="@{/messages/{userId}(userId=${profileUser.id})}" 
+								   					      method="GET" class="action-form">
+								   					    <button type="submit" class="message-btn">Message</button>
+								   					</form>
+												  
+				               </div>
+                
+                <!-- Bio Section -->
+                <div class="bio">
+                    <p id="bioText" th:text="${#strings.isEmpty(user.bio) ? 'No bio available' : user.bio}"></p>
+                    <a href="#" class="edit-bio-icon" onclick="toggleBioForm()">&#9998;</a>
+                    
+                    <!-- Hidden Bio Edit Form -->
+                    <form id="bioForm" th:action="@{/updateBio}" method="post" style="display: none;">
+                        <input type="text" name="bio" id="bioInput" th:value="${user.bio}" placeholder="Enter your bio">
+                        <button type="button" onclick="submitBioForm()">Save</button>
+                        <button type="button" onclick="toggleBioForm()">Cancel</button>
+                    </form>
+                </div>
+                
+            </div>
+        </section>
+
+        <!-- Contact Info Section -->
+        <section class="contact-info">
+            <h2>Contact Information</h2>
+            <ul>
+                <li><strong>Email:</strong> <span th:text="${user.email}"></span></li>
+                <li><strong>Location:</strong> <span th:text="${user.location != null} ? ${user.location} : 'N/A'"></span></li>
+				<li><strong>Website:</strong> <span th:text="${user.website != null} ? ${user.website} : 'N/A'"></span></li>
+
+            </ul>
+        </section>
+		
+		<!-- Personal Information Section -->
+		       <section class="personal-info">
+		           <h2>Personal Information</h2>
+		           <ul>
+		               <li><strong>Email:</strong> <span th:text="${user.email}"></span></li>
+					   <li><strong>Phone:</strong> <span th:text="${user.phone != null} ? ${user.phone} : 'N/A'"></span></li>
+					   <li><strong>Website:</strong> <span th:text="${user.website != null} ? ${user.website} : 'N/A'"></span></li>
+		               <li><strong>Location:</strong> <span th:text="${user.location != null} ? ${user.location} : 'N/A'"></span></li>
+
+		               <!-- Date of Birth -->
+		               <li><strong>Date of Birth:</strong> 
+		                   <span th:text="${user.dob != null} ? ${#temporals.format(user.dob, 'dd MMM yyyy')} : 'N/A'"></span>
+		               </li>
+		               
+		               <!-- Gender -->
+		               <li><strong>Gender:</strong>
+		                   <span th:text="${user.gender != null} ? ${user.gender} : 'N/A'"></span>
+		               </li>
+
+		               <!-- Add edit option for DOB and Gender -->
+		               <a href="#" class="edit-info-icon" onclick="toggleInfoForm()">&#9998;</a>
+
+					   <!-- Hidden Personal Info Edit Form -->
+					   <form id="infoForm" th:action="@{/updatePersonalInfo}" method="post" style="display: none;">
+
+					       <!-- Email field -->
+					       <label for="emailInput">Email:</label>
+					       <input type="email" name="email" th:value="${user.email}" required />
+
+					       <!-- Phone field -->
+					       <label for="phone">Phone:</label>
+					       <input type="tel" name="phone" th:value="${user.phone}" pattern="[0-9]{10}" title="Enter a valid 10-digit phone number" required />
+
+					       <!-- Website field -->
+					       <label for="website">Website:</label>
+					       <input type="url" id="website" name="website" th:value="${user.website}" />
+
+					       <!-- Location field -->
+					       <label for="location">Location:</label>
+					       <input type="text" name="location" th:value="${user.location}" required />
+   
+						  <!-- Date of birth field -->
+		                   <label for="dobInput">Date of Birth:</label>
+		                   <input type="date" id="dobInput" name="dob" th:value="${user.dob}" required>
+		                   
+		                   <label for="genderSelect">Gender:</label>
+		                   <select id="genderSelect" name="gender">
+		                       <option th:selected="${user.gender == 'Male'}" value="Male">Male</option>
+		                       <option th:selected="${user.gender == 'Female'}" value="Female">Female</option>
+		                       <option th:selected="${user.gender == 'Other'}" value="Other">Other</option>
+		                   </select>
+		                   
+		                   <button type="submit">Save</button>
+		                   <button type="button" onclick="toggleInfoForm()">Cancel</button>
+		               </form>
+		           </ul>
+		       </section>
+
+        <!-- Posts Section -->
+        <section class="user-posts">
+            <h2>My Posts</h2>
+            <div th:if="${user.posts != null and !user.posts.isEmpty()}">
+                <div th:each="post : ${user.posts}" class="post">
+                    <div class="post-header">
+                        <h4 th:text="${post.content}"></h4>
+                        <!-- Format the date using Thymeleaf #temporals.format -->
+                        <p><small th:text="${#temporals.format(post.createdAt, 'dd MMM yyyy HH:mm')}"></small></p>
+                    </div>
+                    
+                    <!-- Post Photo Display -->
+                    <div th:if="${post.imageUrl != null}">
+                        <img th:src="@{${post.imageUrl}}" alt="Post Photo" class="post-photo">
+                    </div>
+					<div class="post-actions">
+						<span th:text="${likeCount[post.id]}">0</span>
+						<form th:action="@{'/like/' + ${post.id} + '/toggle'}" method="post">
+					      <button type="submit" class="like-button">
+							<i th:class="${likedPostsMap[post.id] != null ? (likedPostsMap[post.id] ? 'fas fa-thumbs-down' : 'fas fa-thumbs-up') : 'fas fa-thumbs-up'}"></i>
+		                        <span th:text="${likedPostsMap[post.id] ? 'Unlike' : 'Like'}"></span>
+	                      </button>
+						</form>					   
+						<!-- Comment button -->
+					<button th:id="'commentBtn-' + ${post.id}" 
+                   th:onclick="'toggleCommentBox(' + ${post.id} + ')'"
+			         type="button">Comment</button>
+					  <!-- Hidden comment box -->
+				  <div th:id="'commentBox-' + ${post.id}" style="display: none; margin-top: 10px;">
+				   <form th:action="@{'/comments/add/' + ${post.id}}" method="post" style="display: inline;">
+					     <textarea name="content" rows="3" placeholder="Write a comment..."></textarea>
+										   <br>
+					 <button type="submit">Send</button>
+							 </form>
+					 <form th:action="@{'/comments/delete/' + ${post.id}}" method="post" style="display: inline;">
+			    <button type="submit">Delete</button>
+								 </form>
+						</div>
+					    <button class="share-btn"><i class="fas fa-share"></i> Share</button>
+					</div>
+					<!-- Comments for the post -->
+				  <div th:each="comment : ${post.comments}">
+			   <p>
+			<strong th:text="${comment.user.username}">Username</strong>: 
+			<span th:text="${comment.content}">Comment content</span>
+		   </p>
+		</div>		 
+                </div>
+            </div>
+            <div th:if="${user.posts == null or user.posts.isEmpty()}">
+                <p>No posts to display.</p>
+            </div>
+			
+        </section>
+    </div>
+
+    <script>
+        function toggleBioForm() {
+            const bioText = document.getElementById("bioText");
+            const bioForm = document.getElementById("bioForm");
+
+            // Toggle visibility
+            if (bioForm.style.display === "none") {
+                bioForm.style.display = "block";
+                bioText.style.display = "none";
+            } else {
+                bioForm.style.display = "none";
+                bioText.style.display = "block";
+            }
+        }
+
+        function submitBioForm() {
+            document.getElementById("bioForm").submit();
+        }
+    </script>
+	<script>
+		function toggleInfoForm() { 
+	    const infoForm = document.getElementById("infoForm");
+	    const editIcon = document.querySelector(".edit-info-icon");
+
+	    // Toggle form visibility
+	    if (infoForm.style.display === "none" || infoForm.style.display === "") {
+	        infoForm.style.display = "block";  // Show the form
+	    } else {
+	        infoForm.style.display = "none";  // Hide the form
+	    }
+
+	    // Optional: Change the icon to indicate the form is visible or not
+	    if (infoForm.style.display === "block") {
+	        editIcon.innerHTML = "&#10005;";  // Change icon to "X" (close)
+	    } else {
+	        editIcon.innerHTML = "&#9998;";  // Change icon back to pen
+	    }
+	}
+</script>
+<script>
+    // Function to clear the value of an input field when the "Delete" button is clicked
+    function clearField(fieldId) {
+        const field = document.getElementById(fieldId);
+        field.value = '';  // Clear the field's value
+    }
+</script>
+<style>
+       /* Basic styling for the profile */
+       body {
+           font-family: Arial, sans-serif;
+           background-color: #f4f4f9;
+           margin: 0;
+           padding: 0;
+       }
+
+       .profile {
+           background-color: #fff;
+           padding: 20px;
+           max-width: 800px;
+           margin: 20px auto;
+           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+           border-radius: 8px;
+       }
+
+       h1 {
+           font-size: 24px;
+           color: #333;
+           margin-bottom: 10px;
+           display: flex;
+           align-items: center;
+           justify-content: left;
+       }
+
+       h1 span {
+           font-weight: bold;
+           margin-right: 4px;
+       }
+
+       /* Styling for followers and following counts */
+       .followers-following {
+           font-size: 18px;
+           color: #555;
+       }
+
+       .followers-following a {
+           color: #007bff;
+           text-decoration: none;
+           font-weight: 600;
+       }
+
+       .followers-following a:hover {
+           text-decoration: underline;
+           color: #0056b3;
+       }
+
+       /* Optional: Add some spacing around the bio */
+       p {
+           color: #777;
+           font-size: 16px;
+           margin-top: 10px;
+       }
+   </style>
+   <!-- Script to toggle comment box visibility -->
+   	<script>
+   	function toggleCommentBox(postId) {
+   	    const commentBox = document.getElementById(`commentBox-${postId}`);
+   	    commentBox.style.display = (commentBox.style.display === "none") ? "block" : "none";
+   	}
+   	</script>
+	<script>
+	    function startConversation(userId) {
+	        axios.post('/messages/startConversation', null, { params: { userId: userId } })
+	            .then(response => {
+	                // Redirect to the returned URL
+	                window.location.href = response.request.responseURL;
+	            })
+	            .catch(error => {
+	                console.error("Error starting conversation:", error);
+	                alert("Unable to start a conversation. Please try again.");
+	            });
+	    }
+	</script>
+</body>
+</html>

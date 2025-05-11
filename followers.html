@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Followers - <span th:text="${user.username}"></span></title>
+	<link rel="stylesheet" href="/path/to/followers.css">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        .followers-container {
+            width: 40%;
+            max-width: 500px;
+            margin: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .followers-header {
+            padding: 10px 15px;
+            background-color: #28a745; /* Green for distinction from following page */
+            color: #fff;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .followers-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .followers-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .followers-list::-webkit-scrollbar-thumb {
+            background-color: #28a745;
+            border-radius: 4px;
+        }
+
+        .followers-list ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .followers-list li {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .followers-list li:last-child {
+            border-bottom: none;
+        }
+
+        .suggested-user-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+        }
+
+        .followers-list a {
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .followers-list a:hover {
+            color: #28a745;
+        }
+
+        .no-followers {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="followers-container">
+        <div class="followers-header" th:text="' Followers ' + ${user.username}"></div>
+        <div class="followers-list" th:if="${#lists.isEmpty(followers)}">
+            <p class="no-followers">No followers yet!</p>
+        </div>
+        <div class="followers-list" th:if="${!#lists.isEmpty(followers)}">
+            <ul>
+                <li th:each="follower : ${followers}">
+                    <img th:src="${follower.profilePictureUrl != null ? follower.profilePictureUrl : '/images/default-profile.jpg'}" 
+                         alt="User profile picture" class="suggested-user-pic"/>
+                    <a th:href="@{/profile/{username}(username=${follower.username})}" 
+                       th:text="${follower.username}"></a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Following - <span th:text="${user.username}"></span></title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        .following-container {
+            width: 40%;
+            max-width: 500px;
+            margin: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .following-header {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .following-list {
+            max-height: 400px; /* Adjust the height as needed */
+            overflow-y: auto;
+        }
+
+        .following-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .following-list::-webkit-scrollbar-thumb {
+            background-color: #007bff;
+            border-radius: 4px;
+        }
+
+        .following-list ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .following-list li {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .following-list li:last-child {
+            border-bottom: none;
+        }
+
+        .suggested-user-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+        }
+
+        .following-list a {
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .following-list a:hover {
+            color: #007bff;
+        }
+
+        .no-following {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+	
+    <div class="following-container">
+        <div class="following-header" th:text="' Following ' + ${user.username}"></div>
+        <div class="following-list" th:if="${#lists.isEmpty(following)}">
+            <p class="no-following">No following yet!</p>
+        </div>
+        <div class="following-list" th:if="${!#lists.isEmpty(following)}">
+            <ul>
+                <li th:each="followingUser : ${following}">
+                    <img th:src="${followingUser.profilePictureUrl != null ? followingUser.profilePictureUrl : '/images/default-profile.jpg'}" 
+                         alt="User profile picture" class="suggested-user-pic"/>
+                    <a th:href="@{/profile/{username}(username=${followingUser.username})}" 
+                       th:text="${followingUser.username}"></a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

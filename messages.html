@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+    <link rel="stylesheet" href="/css/messages.css">
+    <style>
+        /* Navigation Bar Styles */
+        .navbar {
+            background-color: #333;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar .logo {
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .navbar .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        .navbar .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        .navbar .nav-links a:hover {
+            background-color: #575757;
+        }
+
+        /* End of Navigation Bar Styles */
+
+        .messages-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .message:last-child {
+            border-bottom: none;
+        }
+        .message-timestamp {
+            font-size: 0.9em;
+            color: gray;
+            position: absolute;
+            right: 0; /* Aligns the timestamp to the right corner */
+        }
+        .message-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            margin-bottom: 10px;
+        }
+        .message-content {
+            margin: 5px 0;
+        }
+        .message-info {
+            flex-grow: 1; /* Allows the name to take available space */
+        }
+        .message img {
+            margin-right: 10px;
+        }
+
+        .message-content {
+            margin-top: 5px;
+            padding-left: 50px; /* Adjust for profile image */
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="logo">SocialMediaApp</div>
+        <div class="nav-links">
+            <a href="/home">Home</a>
+            <a th:href="@{'/profile/' + ${username}}">Profile</a>
+            <a href="/messages">Messages</a>
+            <a href="/notifications">Notifications</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
+    <!-- End of Navigation Bar -->
+
+    <div class="messages-container">
+        <h1>Your Messages</h1>
+        <div th:if="${lastMessages != null && !lastMessages.isEmpty()}">
+            <div th:each="message : ${lastMessages}" class="message"
+                 th:if="${message.sender.id != loggedInUser.id}"> <!-- Check to skip messages sent by the logged-in user -->
+                <div class="message-header">
+                    <img th:if="${message.sender != null}" 
+                         th:src="${message.sender.profilePictureUrl}" 
+                         alt="Profile Picture" 
+                         style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;">
+                    <div class="message-info">
+                        <span class="sender-name">
+                            <a th:href="@{'/messages/' + ${message.sender.id}}" 
+                               th:text="${message.sender.username}"></a>
+                        </span>
+                    </div>
+                    <div class="message-timestamp">
+                        <span th:text="${#temporals.format(message.timestamp, 'dd MMM yyyy HH:mm')}"></span>
+                    </div>
+                </div>
+                <div class="message-content" th:text="${message.content}"></div>
+            </div>
+        </div>
+        <div th:if="${lastMessages == null || lastMessages.isEmpty()}">
+            <p>No messages to display.</p>
+        </div>
+    </div>
+</body>
+</html>

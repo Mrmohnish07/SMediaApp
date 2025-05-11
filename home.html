@@ -1,0 +1,210 @@
+<!DOCTYPE html> 
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Home | Social Media App</title>
+    <link rel="stylesheet" href="/css/home.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+	<style>
+	        /* Ensure the Upload button is hidden by default */
+	        .upload-submit-button {
+	            display: none !important;
+	        }
+	    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <h1><div class="logo">SocialMediaApp</div></h1>
+        <nav>
+            <a href="/home" th:href="@{/home}">Home</a>
+            <a href="/profile/{username}" th:href="@{/profile/{username}(username=${username})}">Profile</a>
+            <a href="/messages" th:href="@{/messages}">Messages</a>
+            <a href="/notifications" th:href="@{/notifications}">
+				Notifications <span class="notification-count" th:if="${Ncount > 0}" 
+			                th:text="${Ncount}"></span>
+						</a>
+            <a href="/logout" th:href="@{/logout}">Logout</a>
+        </nav>
+    </header>
+    
+    <!-- Main content container --> 
+    <div class="container">
+        <!-- Profile Sidebar -->
+        <aside id="profile-info">
+			<h2>About <span th:text="${username}">User</span></h2>
+			            <div class="profile-picture">
+			                <img th:src="${profilePhoto != null ? profilePhoto : '/images/default-profile.jpg'}" alt="Profile Picture" />
+			                
+			                <!-- Pen icon for photo upload overlay -->
+			                <label for="profilePhotoUpload" class="edit-profile-icon">
+			                    <i class="fas fa-pen"></i> <!-- FontAwesome pen icon -->
+			                </label>
+			                
+			                <!-- Form to change the profile photo -->
+			                <form action="/uploadProfilePhoto" method="post" enctype="multipart/form-data" class="photo-upload-form">
+			                    <input type="file" id="profilePhotoUpload" name="profilePhoto" accept="image/*" style="display: none;" />
+			                    <button type="submit" class="upload-submit-button">Upload</button>
+			                </form>
+			            </div>
+            <!-- Bio Section -->
+            <div class="bio">
+                <h3>Bio</h3>
+                <p th:text="${bio != null ? bio : 'No bio available.'}">No bio available.</p>
+            </div>
+        </aside>
+
+        <!-- Middle Section: Post Creation and User's Posts -->
+        <main id="main-content">
+            <!-- Post Creation Form -->
+            <section id="post-creation">
+                <h2>Create a Post</h2>
+                <form action="/createPost" method="post" enctype="multipart/form-data">
+                    <textarea name="postContent" placeholder="What's on your mind?" rows="4"></textarea>
+					<!-- Image Upload Icon -->
+					      <label for="postImageUpload" class="image-upload-icon">
+					          <i class="fas fa-camera"></i> <!-- FontAwesome camera icon -->
+					      </label>
+					      <input type="file" id="postImageUpload" name="postImage" accept="image/*" style="display: none;" />
+					      
+					      <!-- Post Button -->
+					      <button type="submit" class="post-button">Post</button>
+                </form>
+            </section>
+
+			<!-- User's Feed -->
+			<section id="feed">
+			    <h2>Your Feed</h2>
+				
+				<!-- Check if there are any posts -->
+				   <div th:if="${#lists.isEmpty(followingPosts)}">
+				       <p>No posts to display. Follow more users to see their posts!</p>
+				   </div>
+			    
+				   
+					  <!-- Loop through posts by following users -->
+					     <div th:each="post : ${followingPosts}" class="post-container">
+					         <article class="post">
+					             <div class="post-header">
+					                 <!-- Post author profile picture -->
+					                 <img th:src="${post.user.profilePictureUrl != null ? post.user.profilePictureUrl : '/images/default-profile.jpg'}" 
+					                      alt="User Profile Picture" class="profile-pic" />
+					                 
+					                 <!-- Post author username -->
+					                 <h3><a th:href="@{/profile/{username}(username=${post.user.username})}" th:text="${post.user.username}">User</a></h3>
+									 <!-- Format the date using Thymeleaf #temporals.format -->
+									  <p><small th:text="${#temporals.format(post.createdAt, 'dd MMM yyyy HH:mm')}"></small></p>
+					             </div>
+					             
+					             <!-- Post content -->
+					             <p th:text="${post.content}">Post content goes here</p>
+					             
+					             <!-- If the post has an image -->
+					             <div th:if="${post.imageUrl != null}" class="post-image">
+					                 <img th:src="${post.imageUrl}" alt="Post Image" />
+					             </div>
+					             
+					             <!-- Post actions -->
+					             <div class="post-actions">
+									<p>Likes: 
+									    <a th:href="@{/{postId}/likes(postId=${post.id})}">
+									        <span th:text="${likeCount[post.id]}">0</span>
+									    </a>
+									</p>
+									<form th:action="@{'/like/' + ${post.id} + '/toggle'}" method="post">
+									    <button type="submit" class="like-button">
+									        <i th:class="${likedPostsMap[post.id] ? 'fas fa-thumbs-down' : 'fas fa-thumbs-up'}"></i>
+									        <span th:text="${likedPostsMap[post.id] ? 'Unlike' : 'Like'}"></span>
+									    </button>
+									</form>
+									 
+									<!-- Comment button -->
+									<button th:id="'commentBtn-' + ${post.id}" 
+									               th:onclick="'toggleCommentBox(' + ${post.id} + ')'"
+									               type="button">Comment</button>
+												   <!-- Hidden comment box -->
+												         <div th:id="'commentBox-' + ${post.id}" style="display: none; margin-top: 10px;">
+												             <form th:action="@{'/comments/add/' + ${post.id}}" method="post" style="display: inline;">
+												                 <textarea name="content" rows="3" placeholder="Write a comment..."></textarea>
+												                 <br>
+												                 <button type="submit">Send</button>
+												             </form>
+												             <form th:action="@{'/comments/delete/' + ${post.id}}" method="post" style="display: inline;">
+												                 <button type="submit">Delete</button>
+												             </form>
+												         </div>
+					                 <button class="share-button">Share</button>
+									 
+					             </div>
+								 
+								 <!-- Comments for the post -->
+								       <div th:each="comment : ${post.comments}">
+								           <p>
+								               <strong th:text="${comment.user.username}">Username</strong>: 
+								               <span th:text="${comment.content}">Comment content</span>
+											   
+											   <!-- Delete icon for the comment -->
+											          <form th:action="@{'/comments/delete/' + ${comment.id}}" method="post" style="display: inline;">
+											              <button type="submit" class="delete-comment-btn" title="Delete Comment">
+											                  <i class="fas fa-trash"></i> <!-- FontAwesome trash icon -->
+											              </button>
+											          </form>
+								           </p>
+								       </div>
+					         </article>
+					     </div>
+			</section>
+        </main>
+
+        <!-- Suggested Users Section -->
+        <aside id="suggested-users">
+            <h2>Suggested Users</h2>
+            <ul>
+                <li th:each="user : ${suggestedUsers}">
+                    <div class="suggested-user">
+                        <img th:src="${user.profilePictureUrl != null ? user.profilePictureUrl : '/images/default-profile.jpg'}" 
+                             alt="User profile picture" class="suggested-user-pic"/>
+                        <a th:href="@{/profile/{username}(username=${user.username})}" th:text="${user.username}">User</a>
+						<!-- Follow/Unfollow Button -->
+						  <div th:if="${loggedInUser.username != user.username}">
+						        <form th:action="@{${user.followers.contains(loggedInUser.id) ? '/user/unfollow/feed/' : '/user/follow/feed/'} + ${user.username}}" method="post">
+						          <button type="submit" class="follow-btn" th:text="${user.followers.contains(loggedInUser.id) ? 'Unfollow' : 'Follow'}"></button>
+						      </form>
+						  </div>
+                    </div>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+	<script>
+	    // Automatically submit the form when a file is selected
+	    document.getElementById('profilePhotoUpload').addEventListener('change', function() {
+	        const photoUploadForm = this.closest('form'); // Get the form element
+	        
+	        // If a file is selected, submit the form
+	        if (this.files && this.files.length > 0) {
+	            photoUploadForm.submit(); // Submit the form
+	        }
+	    });
+	</script>
+	<style>
+	    .notification-count {
+	        background-color: #dc3545; /* Red color */
+	        color: white;
+	        font-size: 12px;
+	        font-weight: bold;
+	        border-radius: 50%;
+	        padding: 2px 6px;
+	        margin-left: 5px;
+	    }
+	</style>
+	<!-- Script to toggle comment box visibility -->
+	<script>
+	function toggleCommentBox(postId) {
+	    const commentBox = document.getElementById(`commentBox-${postId}`);
+	    commentBox.style.display = (commentBox.style.display === "none") ? "block" : "none";
+	}
+	</script>
+</body>
+</html>

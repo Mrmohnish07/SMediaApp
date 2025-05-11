@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Likes Details</title>
+    <link rel="icon" th:href="@{/path/to/your/favicon.ico}" type="image/x-icon">
+	<link rel="stylesheet" href="/css/postlikes.css">
+    <style>
+        .profile-picture {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Users Who Liked This Post</h1>
+
+    <!-- Post Content -->
+    <p>Post Content: <span th:text="${post.content}">Sample Post Content</span></p>
+
+    <!-- Total Likes -->
+    <p>Likes: <span th:text="${likeCount}">0</span></p>
+
+    <!-- List of Users -->
+    <ul>
+        <li th:each="user : ${likedUsers}">
+            <!-- Profile Picture -->
+            <img th:src="${user.profilePictureUrl != null ? user.profilePictureUrl : '/images/default-profile.jpg'}" 
+                 th:alt="'Profile picture of ' + ${user.username}" 
+                 class="profile-picture"/>
+            
+            <!-- Username Link -->
+            <a th:href="@{/profile/{username}(username=${user.username})}" th:text="${user.username}"></a>
+        </li>
+    </ul>
+
+    <!-- Back to Home Link -->
+    <a th:href="@{/home}"  class="back-home-link">Back to Home</a>
+</body>
+</html>

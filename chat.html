@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link rel="stylesheet" href="/css/chat.css">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <h1 th:text="'Chat with ' + ${receiver.username}">Chat with Receiver</h1>
+            <a href="/messages" class="back-button">Back to Conversations</a>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="chat-messages" id="chatBox">
+            <div id="messageContainer">
+                <!-- Messages will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Message Input -->
+        <div class="message-input">
+            <input type="hidden" id="conversationId" value="${conversation.id}">
+            <input type="hidden" id="receiverId" value="${receiverId}">
+            <input type="text" id="messageInput" placeholder="Type a message..." />
+            <button id="sendButton">Send</button>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+
+    <script type="text/javascript">
+        // Embed Thymeleaf expressions for dynamic data
+        var conversationId = [[${conversation.id}]];  // Conversation ID
+        var loggedInUserId = [[${loggedInUserId}]];    // Logged-in user ID
+        var receiverId = [[${receiverId}]];            // Receiver's user ID
+
+        // Function to display incoming messages in the chat box
+       function displayMessage(message) {
+		    const messageContainer = document.getElementById("messageContainer");
+		
+		    // Check if the sender is the logged-in user or the receiver
+		    const messageDiv = document.createElement("div");
+		    messageDiv.className = message.senderId === loggedInUserId ? 'message-sent' : 'message-received';
+		
+		    // Content and timestamp
+		    const content = message.content || "No content";
+		    const timestamp = message.timestamp || "Unknown time";
+			const localTimestamp = new Date(timestamp).toLocaleString();  // Converts UTC to local time
+
+			console.log('Formatted timestamp:', localTimestamp);  // Log the formatted timestamp
+		    // Build the message HTML
+		    messageDiv.innerHTML = `
+		        <p>${content}</p>
+		        <span class="timestamp">${localTimestamp}</span>
+		    `;
+		
+		    // Add sender's profile picture if you want to show it
+		    if (message.senderProfilePictureUrl) {
+		        const profilePic = document.createElement("img");
+		        profilePic.src = message.senderProfilePictureUrl;
+		        profilePic.classList.add("sender-profile-pic");
+		        messageDiv.prepend(profilePic);
+		    }
+		
+		    // Append the message to the container
+		    messageContainer.appendChild(messageDiv);
+		
+		    // Scroll to the bottom of the chat box
+		    messageContainer.scrollTop = messageContainer.scrollHeight;
+		}
+		
+
+
+       function fetchMessages() {
+		fetch(`/conversation/${conversationId}`)   // Calls your /conversation/{conversationId} endpoint
+		        .then(response => {
+		            if (!response.ok) {
+						throw new Error(`HTTP error! Status: ${response.status}`);  // Proper string formatting with backticks
+		            }
+		            return response.json();
+		        })
+		        .then(messages => {
+		            console.log("Fetched messages:", messages); // Debugging log
+		            messages.forEach(message => displayMessage(message)); // Loop through and display each message
+		        })
+		        .catch(error => console.error("Error fetching messages:", error));
+		}
+
+
+        // Create WebSocket connection with SockJS fallback
+        var socket = new SockJS("/chat");  // Use the static "/chat" endpoint
+        var stompClient = Stomp.over(socket);
+
+        // Connect to the WebSocket and subscribe to the conversation topic
+        stompClient.connect({}, function(frame) {
+            console.log('Connected: ' + frame);
+
+            // Subscribe to the conversation's topic
+            stompClient.subscribe("/topic/conversation/" + conversationId + "/info", function(event) {
+                var message = JSON.parse(event.body);  // Parse the message body as JSON
+                displayMessage(message);  // Function to display the message
+            });
+        });
+
+        // Handle sending messages when the send button is clicked
+        document.getElementById("sendButton").addEventListener("click", function(event) {
+            event.preventDefault();  // Prevent form submission
+
+            var messageContent = document.getElementById("messageInput").value;
+
+            if (messageContent) {
+                var message = {
+                    sender: { id: loggedInUserId },
+                    receiver: { id: receiverId },
+                    conversation: { id: conversationId },
+                    content: messageContent,
+                    timestamp: new Date().toISOString()
+                };
+
+                // Send the message via STOMP
+                stompClient.send("/app/chat", {}, JSON.stringify(message));
+
+                // Clear the input field
+                document.getElementById("messageInput").value = "";
+            }
+        });
+
+        // Fetch messages when the page loads
+        fetchMessages();
+    </script>
+</body>
+</html>
